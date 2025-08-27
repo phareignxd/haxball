@@ -1,4 +1,3 @@
-
 var roomName = "Room Name";
 var maxPlayers = 10;
 var roomPublic = false;
