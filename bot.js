@@ -1,8 +1,10 @@
+const HaxballJS = require('haxball.js');
+
 var roomName = "Room Name";
 var maxPlayers = 10;
 var roomPublic = false;
 var playerName = "BOT";
-var noPlayer = false; //false = Bot İs invisible - true = Bot İs Visible (False Recomended)
+var noPlayer = false; // false = Bot is invisible, true = visible
 const geo = [
     { code: 'TR', lat: 40.9, lon: 29.1 },
     { code: 'FR', lat: 46.2, lon: 2.2 },
@@ -10,13 +12,14 @@ const geo = [
     { code: 'GB', lat: 55.3, lon: -3.4 },
     { code: 'PT', lat: 39.3, lon: -8.2 },
 ];
+
 var redTeam = ["","","","","",""];
 var blueTeam = ["","","","","",""];
 var auth;
 var previousPositionsX = [];
 var previousPositionsY = [];
 var playerMoving = false;
-var stats = [0,0,0,0,0,0,0,"name",0]// stats[0] = total games, stats[1] = wins, stats[2] = loses, stats[3] = goals, stats[4] = own goal, stats[5] = point, stats[6] = signed, stats[7] player.name, stats[8] = 0: noban - 1: banned
+var stats = [0,0,0,0,0,0,0,"name",0];
 var ballOut2 = true;
 var realMap = false;
 var exitingPos = null;
@@ -26,109 +29,82 @@ var blueZero = undefined;
 var specZero = undefined;
 var lastCall2;
 var lastScores = 0;
-var slowModeTime = 5;//slow chat mode time (seconds)
+var slowModeTime = 5;
 var backMSG = false;
 var realMap2 = false;
 var isLineUp = false;
-var room = HBInit({ roomName: roomName, maxPlayers: maxPlayers, public: roomPublic, playerName: playerName, geo:geo[0],noPlayer:noPlayer });
-var visible = "";
-room.setTeamsLock(true);
-room.setScoreLimit(0);
-room.setTimeLimit(0);
-var redStreak = 0;//win streak's of red team
-var blueStreak = 0;//win streak's of blue team
-var point = [
-    { x: 0, y: 0 },
-    { x: 0, y: 0 },
-];
-var lastCall;
-var lastTeamTouched = 0;
-var stadiumWidth = 1150;
-var stadiumHeight = 600;
-var radiusBall = 8;
-var throwInLeeway = 350;
-var greenLine = 510;
 
-/* SETTINGS */
+// Admin password saklama (console.log yerine değiştir)
+var adminPassword = 1000 + Math.floor(Math.random() * 9000);
 
-var triggerDistance = radiusBall + 15 + 0.01;
-var outLineY = stadiumWidth - (radiusBall / 2) + 6;
-stadiumWidth += (radiusBall / 2) + 6;
-stadiumHeight += (radiusBall / 2) + 6;
-var abuser = 0;
-var lastPlayerTouched;
-var ballSpeed;
-var SlowMode = [];
-var real = false;
-var kickOff = false;
-var playersAfk = {};
-var afkPlayerIDs = new Set();
-var afkListForChat = [];
-var PlayerList = [];
-var blockedWords = ["oç", "oc", "ananı sikeyim", "ananı", "sikim", "skim", "sikm", "skm", "annı", "piç", "pic", "pıc", "pç", "orospu", "oruspu", "orosbu", "orusbu", "göt", "got", "yarram", "yrrm", "yarrağım", "yarragım", "cocu", "amk", "pezevenk", "sik", "sikik", "sikerim", "sikeceğim", "siktiğim", "allahını", "allahsız", "puşt", "amık", "amcık", "taşşak", "taşak", "daşşak", "daşak", "sikeyim", "sikiyim", "siktir", "sikişek", "sikişelim", "orospunun", "orusbunun", "oruspunun", "orosbunun", "orospunun", "amını", "amcığını", "yarrağını", "götünü", "yarak", "yavşak", "avradini", "avradını", "bacını", "bacini", "siktigim", "siktiğim", "siktirlan", "yavsak", "gay", "lezbiyen", "travesti", "gavat", "sikkafa", "aminiyolunu", "fuck", "bitch", "porn", "porno", "sike", "amınakodum", "sikicem", "sikiş", "sik", "sikerler", "sikişik", "amına", "sikişken", "OÇ", "OC", "ANANı SİKEYİM", "AMI", "ANANI", "SİKİM", "SKİM", "SİKM", "SKM", "ANNı", "PİÇ", "PİC", "PİC", "PÇ", "OROSPU", "ORUSPU", "OROSBU", "ORUSBU", "GÖT", "GOT", "GT", "YARRAM", "YRRM", "YARRAĞIM", "YARRAGİM", "PEZEVENK", "SİK", "SİKİK", "SİKERİM", "SİKECEĞİM", "SİKTİĞİM", "ALLAHINI", "ATANI", "ALLAHSIZ", "PUŞT", "AMIK", "AMCIK", "TAŞŞAK", "TAŞAK", "DAŞŞAK", "DAŞAK", "SİKEYİM", "SİKİYİM", "SİKTİR", "SİKİŞEK", "SİKİŞELİM", "OROSPUNUN", "ORUSBUNUN", "ORUSPUNUN", "OROSBUNUN", "OROSPUNUN", "AMİNİ", "AMCİĞİNİ", "YARRAĞİNİ", "GÖTÜNÜ", "YARAK", "YAVŞAK", "AVRADİNİ", "AVRADİNİ", "BACİNİ", "BACİNİ", "SİKTİGİM", "SİKTİĞİM", "SİKTİRLAN", "YAVSAK", "TRAVESTİ", "GAVAT", "SİKKAFA", "AMİNİYOLUNU", "FUCK", "BİTCH", "PORN", "PORNO", "SİKE", "AMİNAKODUM", "SİKİCEM", "SİKİŞ", "SİK", "SİKERLER", "SİKİŞİK", "AMİNA", "SİKİŞKEN", "amın", "AMIN", "amcığın", "AMCIĞIN", "AMCIĞINIZI", "AMCIĞINI", "amcığınızı", "amcığını", "amcıklama", "amık", "AMIK", "evladı", "EVLADI", "amınakoyim", "AMINAKOYİM", "amınoğlu", "AMINOĞLU", "amina", "AMİNA", "amısına", "AMISINA", "ananın", "ANANIN", "ananisikerim", "ANANISİKERİM", "annenin", "ANNENİN", "ANNESİZ", "annesiz", "babanın", "BABANIN", "babanin", "BABANİN", "anan", "ANAN", "s1kerim", "S1KERİM", "s1kerım", "S1KERIM1", "0c", "0C", "oc", "OC", "OÇ", "oç", "0Ç", "0ç", "s.kyim", "S.KYİM", "S.KYIM", "s.kyım"];//Type here the words that you blocked like this  var blockedWords = ["word1","word2","word3"]
-var adminPassword = 1000 + getRandomInt(9000);
-console.log("Admin Password : " + adminPassword);
-var Team = {
-    SPECTATORS: 0,
-    RED: 1,
-    BLUE: 2
-};
+// Team enum
+var Team = { SPECTATORS: 0, RED: 1, BLUE: 2 };
 
-//Webhoooks
-var chatLogWebhookURL = "";//webhookUrl for sned chat logs to discord (Should Be A Private Discord Channel)
-var adminWebhookURL = "";//webhookurl to sending call for admins (Should Be A Private Discord Channel)
-var sendBanWebhookUrl = "";//for sending ban logs to a discord channel(Can Be Private/Public [i Recomend Public])
-var sendRecWebhookURL = "";//webhookurl for sending match records to a discord channel(Should Be A Public Discord Channel)
-var sendLinkWebhookURL = "";//when you started to host the room, with this webhookurl it will send room link to a discord channel
-//colors for "sendAnnouncement"
+// Webhook URL’lerini buraya ekle
+var chatLogWebhookURL = "";
+var adminWebhookURL = "";
+var sendBanWebhookUrl = "";
+var sendRecWebhookURL = "";
+var sendLinkWebhookURL = "";
+
+// Colors
 var colors = {
     red: 0xff0000,
-    blue:0x0000ff,
+    blue: 0x0000ff,
     orange: 0xFF7F00,
-    pink:0xFFCBDB,
-    purple:0x660099,
-    yellow:0xffff00,
-    green:0x008000,
-    white:0xffffff,
-    brown:0x654321
-}
+    pink: 0xFFCBDB,
+    purple: 0x660099,
+    yellow: 0xffff00,
+    green: 0x008000,
+    white: 0xffffff,
+    brown: 0x654321
+};
+
+// Maplar
 var mapone = ``;
 var maptwo = `.`;
-var mapthree= `.`;
-var mapMiniRealSoccer=`
+var mapthree = `.`;
+var mapMiniRealSoccer = `
 {
+    "name": "Mɪɴɪ Rs v3 v4",
+    "width": 940,
+    "height": 380,
+    "spawnDistance": 350,
+    "bg": { "type": "hockey", "width": 700, "height": 320, "kickOffRadius": 80, "cornerRadius": 0 },
+    "playerPhysics": { "bCoef": 0.1, "invMass": 0.7, "acceleration": 0.11, "kickingAcceleration": 0.05, "kickStrength": 5.67 },
+    "ballPhysics": { "radius": 9.9, "bCoef": 0.5, "invMass": 1, "damping": 0.99, "color": "FFDD00", "cMask": ["all"], "cGroup": ["ball"] }
+}
+`;
 
-	"name" : "Mɪɴɪ Rs v3 v4",
+// --- HBInit ile room oluşturma ---
+HaxballJS().then((HBInit) => {
 
-	"width" : 940,
+    var room = HBInit({
+        roomName: roomName,
+        maxPlayers: maxPlayers,
+        public: roomPublic,
+        playerName: playerName,
+        geo: geo[0],
+        noPlayer: noPlayer
+    });
 
-	"height" : 380,
+    room.setTeamsLock(true);
+    room.setScoreLimit(0);
+    room.setTimeLimit(0);
 
-	"spawnDistance" : 350,
+    // Buraya room.onPlayerJoin, room.onPlayerLeave, room.onGameStart vb. ekleyebilirsin
+    // Örnek:
+    room.onPlayerJoin = (player) => {
+        // player geldiğinde yapılacaklar
+    };
 
-	"bg" : { "type" : "hockey", "width" : 700, "height" : 320, "kickOffRadius" : 80, "cornerRadius" : 0 },
+    room.onPlayerLeave = (player) => {
+        // player ayrıldığında yapılacaklar
+    };
 
-	"playerPhysics" : {
-		"bCoef" : 0.1,
-		"invMass" : 0.7,
-		"acceleration" : 0.11,
-		"kickingAcceleration" : 0.05,
-		"kickStrength" : 5.67
+    // Bot hazır
+});
 
-	},
-
-	"ballPhysics" : {
-		"radius" : 9.9,
-		"bCoef" : 0.5,
-		"invMass" : 1,
-		"damping" : 0.99,
-		"color" : "FFDD00",
-		"cMask" : [ "all"
-		],
-		"cGroup" : [ "ball"
-		]
-
-	},
 
 	"vertexes" : [
 		/* 0 */ { "x" : 700, "y" : 206, "trait" : "line", "color" : "FFDD00" },
