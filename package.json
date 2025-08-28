@@ -1,7 +1,6 @@
 {
   "name": "haxball-bot",
   "version": "1.0.0",
-  "description": "Minimal Haxball bot for Railway",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js"
@@ -9,5 +8,7 @@
   "engines": {
     "node": "18.x"
   },
-  "dependencies": {}
+  "dependencies": {
+    "haxball.js": "^1.0.0"
+  }
 }
